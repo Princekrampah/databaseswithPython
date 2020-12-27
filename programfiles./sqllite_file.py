@@ -2,7 +2,6 @@ import sqlite3
 from sqlite3 import Error
 
 
-
 def create_connection(path):
     connection = None
     try:
@@ -13,6 +12,7 @@ def create_connection(path):
         print(f"got {e} error")
 
     return connection
+
 
 def execute_query(connection, query):
     cursor = connection.cursor()
@@ -150,3 +150,102 @@ users = execute_read_query(connection, get_all_users)
 
 for user in users:
     print(user)
+
+
+# Queries
+
+
+# Joint
+users_posts = """
+    SELECT 
+        users.id,
+        users.name,
+        posts.description
+    FROM
+        users
+    INNER JOIN posts ON posts.id = users.id;
+"""
+
+results = execute_read_query(connection, users_posts)
+
+for record in results:
+    print(record)
+
+print()
+
+mutiple_joins = """
+SELECT
+  posts.description as post,
+  text as comment,
+  name
+FROM
+  posts
+  INNER JOIN comments ON posts.id = comments.post_id
+  INNER JOIN users ON users.id = comments.user_id
+"""
+
+
+results = execute_read_query(connection, mutiple_joins)
+
+for record in results:
+    print(record)
+
+print()
+
+post_likes = """
+    SELECT
+        posts.description as post,
+        COUNT(likes.id) as likes
+    FROM
+        posts,
+        likes
+    WHERE
+        posts.id = likes.post_id
+    GROUP BY
+        likes.post_id;
+"""
+
+post_like_other = """
+    SELECT
+        description as post,
+        COUNT(likes.post_id)
+    FROM
+        posts
+        INNER JOIN likes ON posts.id = likes.post_id
+    GROUP BY
+        likes.post_id
+"""
+
+
+results = execute_read_query(connection, post_like_other)
+
+for record in results:
+    print(record)
+
+print()
+
+# update tables
+
+update = """
+    UPDATE
+        posts
+    SET
+        description = "Updated post"
+    WHERE
+        id = 3;
+"""
+
+execute_query(connection, update)
+
+print(execute_read_query(connection, "SELECT * FROM posts  WHERE id = 3"))
+
+# Delete
+
+print(execute_read_query(connection, "SELECT * FROM comments  WHERE id = 3"))
+print()
+print()
+
+execute_query(connection, "DELETE FROM comments WHERE id = 2")
+
+
+print(execute_read_query(connection, "SELECT * FROM comments  WHERE id = 3"))

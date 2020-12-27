@@ -7,6 +7,7 @@ load_dotenv()
 
 PASSWD = os.getenv("DATABASE_PWD")
 
+
 def create_connection(host_name, user_name, user_pwd):
     connection = None
 
@@ -14,7 +15,7 @@ def create_connection(host_name, user_name, user_pwd):
         connection = mysql.connector.connect(
             host=host_name,
             user=user_name,
-            passwd = user_pwd
+            passwd=user_pwd
         )
         print("Connection established")
     except Error as e:
@@ -48,12 +49,14 @@ def create_connection_to_db(host_name, user_name, user_pwd, db_name):
 
     return connection
 
+
 connection = create_connection("127.0.0.1", "root", PASSWD)
 
 # create_db_query = "CREATE DATABASE databasewithpython"
 # create_database(connection, create_db_query)
 
-connection = create_connection_to_db("127.0.0.1", "root", PASSWD, "databasewithpython")
+connection = create_connection_to_db(
+    "127.0.0.1", "root", PASSWD, "databasewithpython")
 
 
 def execute_query(connection, query):
@@ -93,8 +96,6 @@ create_posts_table = """
 
 
 execute_query(connection, create_posts_table)
-
-
 
 
 create_comments_table = """
@@ -181,4 +182,114 @@ VALUES
 """
 
 # execute_query(connection, create_comments)
-# execute_query(connection, create_likes) 
+# execute_query(connection, create_likes)
+
+
+def execute_read_query(connection, query):
+    cursor = connection.cursor()
+    results = None
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    except Error as e:
+        print(e)
+
+    return results
+
+# Queries
+
+
+# Joint
+users_posts = """
+    SELECT 
+        users.id,
+        users.name,
+        posts.description
+    FROM
+        users
+    INNER JOIN posts ON posts.id = users.id;
+"""
+
+results = execute_read_query(connection, users_posts)
+
+for record in results:
+    print(record)
+
+print()
+
+mutiple_joins = """
+SELECT
+  posts.description as post,
+  text as comment,
+  name
+FROM
+  posts
+  INNER JOIN comments ON posts.id = comments.post_id
+  INNER JOIN users ON users.id = comments.user_id
+"""
+
+
+results = execute_read_query(connection, mutiple_joins)
+
+for record in results:
+    print(record)
+
+print()
+
+post_likes = """
+    SELECT
+        posts.description as post,
+        COUNT(likes.id) as likes
+    FROM
+        posts,
+        likes
+    WHERE
+        posts.id = likes.post_id
+    GROUP BY
+        likes.post_id;
+"""
+
+post_like_other = """
+    SELECT
+        description as post,
+        COUNT(likes.post_id)
+    FROM
+        posts
+        INNER JOIN likes ON posts.id = likes.post_id
+    GROUP BY
+        likes.post_id
+"""
+
+
+results = execute_read_query(connection, post_like_other)
+
+for record in results:
+    print(record)
+
+print()
+
+# update tables
+
+update = """
+    UPDATE
+        posts
+    SET
+        description = "Updated post"
+    WHERE
+        id = 3;
+"""
+
+execute_query(connection, update)
+
+print(execute_read_query(connection, "SELECT * FROM posts  WHERE id = 3"))
+
+# Delete
+
+print(execute_read_query(connection, "SELECT * FROM comments  WHERE id = 3"))
+print()
+print()
+
+execute_query(connection, "DELETE FROM comments WHERE id = 2")
+
+
+print(execute_read_query(connection, "SELECT * FROM comments  WHERE id = 3"))
